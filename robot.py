@@ -43,7 +43,22 @@ class RoboschoolForwardWalkerMujocoXML(RoboschoolForwardWalker, RoboschoolUrdfEn
         sinCosToTarget = 2 # sin cos from angle to target
         servoObservation = 12 # rel angles
         numObservation = sensorsObservations+rotationObservation+sinCosToTarget+servoObservation+self.velObservations
-        numObservation = numObservation * 4 # 0.75, 0.5, 0.25 sec history
+
+        if hasattr(settings,"history1Len")==False:
+            settings.history1Len = 0.0
+        if hasattr(settings,"history2Len")==False:
+            settings.history2Len = 0.0
+        if hasattr(settings,"history3Len")==False:
+            settings.history3Len = 0.0
+
+
+        baseObservations = numObservation
+        if settings.history1Len>0.0:
+            numObservation += baseObservations
+        if settings.history2Len>0.0:
+            numObservation += baseObservations
+        if settings.history3Len>0.0:
+            numObservation += baseObservations
         RoboschoolUrdfEnv.__init__(self, fn, robot_name, action_dim, numObservation,
             fixed_base=False,
             self_collision=False)
@@ -71,13 +86,19 @@ class RoboschoolForwardWalkerMujocoXML(RoboschoolForwardWalker, RoboschoolUrdfEn
 
     def calc_state(self):
         robot_state = self.calc_state_single()
-        self.history1.append(robot_state);
-        self.history2.append(robot_state);
-        self.history3.append(robot_state);
+        if settings.history1Len>0.0:
+            self.history1.append(robot_state)
+        if settings.history2Len>0.0:
+            self.history2.append(robot_state)
+        if settings.history3Len>0.0:
+            self.history3.append(robot_state);
         self.last_state = robot_state
-        robot_state= np.append(robot_state,self.history1[0])
-        robot_state= np.append(robot_state,self.history2[0])
-        robot_state= np.append(robot_state,self.history3[0])
+        if settings.history1Len>0.0:
+            robot_state= np.append(robot_state,self.history1[0])
+        if settings.history2Len>0.0:
+            robot_state= np.append(robot_state,self.history2[0])
+        if settings.history3Len>0.0:
+            robot_state= np.append(robot_state,self.history3[0])
         return robot_state
 
  
@@ -165,7 +186,7 @@ class RoboschoolForwardWalkerMujocoXML(RoboschoolForwardWalker, RoboschoolUrdfEn
 
         globalMultiplier = 10.0
 
-        alive_multiplier = 0.01/1.0
+        alive_multiplier = 0.1/1.0
         alive = float(self.alive_bonus(state))
         if alive<0 and self.frame==0:
             print("bad transition")
@@ -232,12 +253,14 @@ class RoboschoolForwardWalkerMujocoXML(RoboschoolForwardWalker, RoboschoolUrdfEn
         
         progressMultiplier = 5.0
         progressNegativeMultiplier = 10.0
-        progress = np.dot(self.movement_per_frame,self.movement_dir)
-        if progress<0.0:
-            progress*=progressNegativeMultiplier
+        progressDir = np.dot(self.movement_per_frame,self.movement_dir)
+        if progressDir<0.0:
+            progressDir*=progressNegativeMultiplier
         else:
-            progress*=progressMultiplier
+            progressDir*=progressMultiplier
+        progressDir*=globalMultiplier
         progress*=globalMultiplier
+        progress+=progressDir
         self.rewards_progress.append(progress)
 
 
@@ -302,12 +325,12 @@ class RoboschoolForwardWalkerMujocoXML(RoboschoolForwardWalker, RoboschoolUrdfEn
         self.numStepsPerSecond = 1.0/self.physics_time_step
         self.numSecondsToTrack = 1.0
         self.walked_distance = deque(maxlen=int(self.numSecondsToTrack*self.numStepsPerSecond))
-        self.history1Len = 0.45
-        self.history1 = deque(maxlen=int(self.history1Len*self.numStepsPerSecond))
-        self.history2Len = 0.3
-        self.history2 = deque(maxlen=int(self.history2Len*self.numStepsPerSecond))
-        self.history3Len = 0.15
-        self.history3 = deque(maxlen=int(self.history3Len*self.numStepsPerSecond))
+        if settings.history1Len>0.0:
+            self.history1 = deque(maxlen=int(settings.history1Len*self.numStepsPerSecond))
+        if settings.history2Len>0.0:
+            self.history2 = deque(maxlen=int(settings.history2Len*self.numStepsPerSecond))
+        if settings.history3Len>0.0:
+            self.history3 = deque(maxlen=int(settings.history3Len*self.numStepsPerSecond))
         if self.robotLibOn:
             self.robotLib.executeCommand("cmd#zero")
             #self.robotLib.executeCommand("cmd#testAction")
