@@ -686,6 +686,7 @@ class RoboschoolForwardWalkerMujocoXML(RoboschoolForwardWalker, RoboschoolUrdfEn
         self.reward_alive = []
         self.ordered_joints = []
         self.jdict = {}
+
         self.jointToUse = ["fl1","fl2","fl3","fr1","fr2","fr3","bl1","bl2","bl3","br1","br2","br3"]
         for j in self.urdf.joints:
             if j.name in self.jointToUse:
@@ -943,7 +944,6 @@ class QuadruppedWalker(RoboschoolForwardWalkerMujocoXML):
             if distLastInterval<minAvgDist:
                 if self.debugStats:
                     print("Long wait without moving:",distLastInterval," ",minAvgDist)
-                self.walked_distance.clear();
                 return 0.1
         #'''
         #distToLine = norm(np.cross(p2-p1, p1-p3))/norm(p2-p1)
