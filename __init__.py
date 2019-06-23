@@ -8,7 +8,23 @@ import subprocess
 register(
     id='QuadruppedWalk-v1',
     entry_point='quadruppedEnv:QuadruppedWalker',
-    max_episode_steps=10000,
+    max_episode_steps= 4000, #10000,
+    reward_threshold=2500.0,
+    tags={ "pg_complexity": 8*1000000 },
+    )
+
+register(
+    id='QAnt-v0',
+    entry_point='quadruppedEnv:QAntOrg',
+    max_episode_steps=1000,
+    reward_threshold=2500.0,
+    tags={ "pg_complexity": 8*1000000 },
+    )
+
+register(
+    id='QAnt-v1',
+    entry_point='quadruppedEnv:QAnt',
+    max_episode_steps=1000,
     reward_threshold=2500.0,
     tags={ "pg_complexity": 8*1000000 },
     )
@@ -27,4 +43,6 @@ from roboschool.gym_humanoid_flagrun import RoboschoolHumanoidFlagrunHarder
 from roboschool.gym_atlas import RoboschoolAtlasForwardWalk
 from roboschool.gym_pong import RoboschoolPong
 from quadruppedEnv.robot import QuadruppedWalker
+from quadruppedEnv.qant import QAnt
+from quadruppedEnv.qant import QAntOrg
 

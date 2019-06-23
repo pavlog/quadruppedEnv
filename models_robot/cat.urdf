@@ -291,7 +291,7 @@
 
     <origin xyz="0.097 0.045 0" rpy="0 0 0" />
     <axis xyz="1 0 0" />
-    <limit effort="100" velocity="100" lower="-0.698132" upper="0.698132" />
+    <limit effort="100" velocity="100" lower="-0.398132" upper="0.698132" />
   </joint>
 
   <joint name="fl2" type="revolute">
@@ -300,7 +300,7 @@
 
     <origin xyz="0 0.035 -0.025" rpy="0 0 0" />
     <axis xyz="0 1 0" />
-    <limit effort="100" velocity="100" lower="-1.57079632679" upper="1.57079632679" />
+    <limit effort="100" velocity="100" lower="-1.22173" upper="1.22173" />
   </joint>
 
   <joint name="fl3" type="revolute">
@@ -328,7 +328,7 @@
 
     <origin xyz="0.097 -0.045 0" rpy="0 0 0" />
     <axis xyz="1 0 0" />
-    <limit effort="100" velocity="100" lower="-0.698132" upper="0.698132" />
+    <limit effort="100" velocity="100" lower="-0.698132" upper="0.398132" />
   </joint>
 
   <joint name="fr2" type="revolute">
@@ -337,7 +337,7 @@
 
     <origin xyz="0 -0.035 -0.025" rpy="0 0 0" />
     <axis xyz="0 1 0" />
-    <limit effort="100" velocity="100" lower="-1.57079632679" upper="1.57079632679" />
+    <limit effort="100" velocity="100" lower="-1.22173" upper="1.22173" />
   </joint>
 
   <joint name="fr3" type="revolute">
@@ -365,7 +365,7 @@
 
     <origin xyz="-0.097 0.045 0" rpy="0 0 0" />
     <axis xyz="1 0 0" />
-    <limit effort="100" velocity="100" lower="-0.698132" upper="0.698132" />
+    <limit effort="100" velocity="100" lower="-0.398132" upper="0.698132" />
   </joint>
 
   <joint name="bl2" type="revolute">
@@ -374,7 +374,7 @@
 
     <origin xyz="0 0.035 -0.025" rpy="0 0 0" />
     <axis xyz="0 1 0" />
-    <limit effort="100" velocity="100" lower="-1.57079632679" upper="1.57079632679" />
+    <limit effort="100" velocity="100" lower="-1.22173" upper="1.22173" />
   </joint>
 
   <joint name="bl3" type="revolute">
@@ -402,7 +402,7 @@
 
     <origin xyz="-0.097 -0.045 0" rpy="0 0 0" />
     <axis xyz="1 0 0" />
-    <limit effort="100" velocity="100" lower="-0.698132" upper="0.698132" />
+    <limit effort="100" velocity="100" lower="-0.698132" upper="0.398132" />
   </joint>
 
   <joint name="br2" type="revolute">
@@ -411,7 +411,7 @@
 
     <origin xyz="0 -0.035 -0.025" rpy="0 0 0" />
     <axis xyz="0 1 0" />
-    <limit effort="100" velocity="100" lower="-1.57079632679" upper="1.57079632679" />
+    <limit effort="100" velocity="100" lower="-1.22173" upper="1.22173" />
   </joint>
 
   <joint name="br3" type="revolute">

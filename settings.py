@@ -9,3 +9,5 @@ def init():
     history2Len = 0.0
     global history3Len
     history3Len = 0.0
+    global jointVelocities
+    jointVelocities = 0
