@@ -19,6 +19,15 @@
       <mass value="0.4"/>
       <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
     </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0.02"/>
+      <geometry>
+        <box size="0.14 0.1 0.04"/>
+      </geometry>
+      <material name="white">
+        <color rgba="0.89 0.548 0.239 1"/>
+      </material>
+    </visual>
   </link>
 
   <link name="fl1_link">
@@ -32,6 +41,15 @@
       <mass value="0.07"/>
       <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
     </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="-0.0 -0.005 0.01"/>
+      <geometry>
+        <box size="0.02 0.041 0.041"/>
+      </geometry>
+      <material name="white">
+        <color rgba="0.0 0.56 0.854 1"/>
+      </material>
+    </visual>
   </link>
    
   <link name="fl2_link">
@@ -45,6 +63,15 @@
       <mass value="0.07"/>
       <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
     </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 -0.03"/>
+      <geometry>
+        <box size="0.02 0.005 0.07"/>
+      </geometry>
+      <material name="white">
+        <color rgba="0.316 0.669 0.261 1"/>
+      </material>
+    </visual>
   </link>
 
   <link name="fl3_link">
@@ -58,6 +85,15 @@
       <mass value="0.05"/>
       <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
     </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0.0 -0.04"/>
+      <geometry>
+        <box size="0.01 0.005 0.07"/>
+      </geometry>
+      <material name="white">
+        <color rgba="0.917 0.814 0.261 1"/>
+      </material>
+    </visual>
   </link>
 
   <link name="fl4_link">
@@ -89,6 +125,15 @@
       <mass value="0.07"/>
       <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
     </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0.0 0.01 0.01"/>
+      <geometry>
+        <box size="0.02 0.041 0.041"/>
+      </geometry>
+      <material name="white">
+        <color rgba="0.0 0.56 0.854 1"/>
+      </material>
+    </visual>
   </link>
    
   <link name="fr2_link">
@@ -102,6 +147,15 @@
       <mass value="0.07"/>
       <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
     </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 -0.03"/>
+      <geometry>
+        <box size="0.02 0.005 0.07"/>
+      </geometry>
+      <material name="white">
+        <color rgba="0.316 0.669 0.261 1"/>
+      </material>
+    </visual>
   </link>
 
   <link name="fr3_link">
@@ -115,6 +169,15 @@
       <mass value="0.05"/>
       <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
     </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0.0 -0.04"/>
+      <geometry>
+        <box size="0.01 0.005 0.07"/>
+      </geometry>
+      <material name="white">
+        <color rgba="0.917 0.814 0.261 1"/>
+      </material>
+    </visual>
   </link>
 
   <link name="fr4_link">
@@ -146,6 +209,15 @@
       <mass value="0.07"/>
       <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
     </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0.0 -0.01 0.01"/>
+      <geometry>
+        <box size="0.02 0.041 0.041"/>
+      </geometry>
+      <material name="white">
+        <color rgba="0.0 0.56 0.854 1"/>
+      </material>
+    </visual>
   </link>
    
   <link name="bl2_link">
@@ -159,6 +231,15 @@
       <mass value="0.07"/>
       <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
     </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 -0.03"/>
+      <geometry>
+        <box size="0.02 0.005 0.07"/>
+      </geometry>
+      <material name="white">
+        <color rgba="0.316 0.669 0.261 1"/>
+      </material>
+    </visual>
   </link>
 
   <link name="bl3_link">
@@ -172,6 +253,15 @@
       <mass value="0.05"/>
       <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
     </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0.0 -0.04"/>
+      <geometry>
+        <box size="0.01 0.005 0.07"/>
+      </geometry>
+      <material name="white">
+        <color rgba="0.917 0.814 0.261 1"/>
+      </material>
+    </visual>
   </link>
 
   <link name="bl4_link">
@@ -203,6 +293,15 @@
       <mass value="0.07"/>
       <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
     </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0.0 0.01 0.01"/>
+      <geometry>
+        <box size="0.02 0.041 0.041"/>
+      </geometry>
+      <material name="white">
+        <color rgba="0.0 0.56 0.854 1"/>
+      </material>
+    </visual>
   </link>
    
   <link name="br2_link">
@@ -216,6 +315,15 @@
       <mass value="0.07"/>
       <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
     </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 -0.03"/>
+      <geometry>
+        <box size="0.02 0.005 0.07"/>
+      </geometry>
+      <material name="white">
+        <color rgba="0.316 0.669 0.261 1"/>
+      </material>
+    </visual>
   </link>
 
   <link name="br3_link">
@@ -229,6 +337,15 @@
       <mass value="0.05"/>
       <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
     </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0.0 -0.04"/>
+      <geometry>
+        <box size="0.01 0.005 0.07"/>
+      </geometry>
+      <material name="white">
+        <color rgba="0.917 0.814 0.261 1"/>
+      </material>
+    </visual>
   </link>
   
   <link name="br4_link">
