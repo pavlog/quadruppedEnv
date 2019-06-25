@@ -112,6 +112,15 @@
       <damping value="10"/>
       <lateral_friction value="1.0"/>
     </contact>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0.0 0.01"/>
+      <geometry>
+        <sphere radius="0.01"/>
+      </geometry>
+      <material name="white">
+        <color rgba="1 1 1 1"/>
+      </material>
+    </visual>
   </link>
 
   <link name="fr1_link">
@@ -196,6 +205,15 @@
       <damping value="10"/>
       <lateral_friction value="1.0"/>
     </contact>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0.0 0.01"/>
+      <geometry>
+        <sphere radius="0.01"/>
+      </geometry>
+      <material name="white">
+        <color rgba="1.0 1.0 1.0 1.0"/>
+      </material>
+    </visual>
   </link>
 
   <link name="bl1_link">
