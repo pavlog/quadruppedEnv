@@ -8,7 +8,7 @@ import subprocess
 register(
     id='QuadruppedWalk-v1',
     entry_point='quadruppedEnv:QuadruppedWalker',
-    max_episode_steps= 4000, #10000,
+    max_episode_steps= 10000, #10000,
     reward_threshold=2500.0,
     tags={ "pg_complexity": 8*1000000 },
     )

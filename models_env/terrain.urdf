@@ -1,9 +1,9 @@
 <?xml version="1.0" ?>
 <robot name="floor">
   <link name="floor">
-  <contact>
-      <lateral_friction value="1"/>
-  </contact>
+    <contact>
+        <lateral_friction value="1.0"/>
+    </contact>
     <inertial>
       <origin rpy="0 0 0" xyz="0 0 0"/>
        <mass value=".0"/>
@@ -18,9 +18,60 @@
 		<collision concave="yes">
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-		<mesh filename="terrain.obj" scale="1 1 1"/>
+		    <mesh filename="terrain.obj" scale="1 1 1"/>
       </geometry>
     </collision>
+    <!-- start  -->
+    <!--
+    <visual>
+      <origin rpy="0 0 0" xyz="0.5 0 -0.023"/>
+      <geometry>
+        <box size="2.2 0.5 0.05"/>
+      </geometry>
+      <material name="road">
+        <color rgba="0.4 0.4 0.5 1"/>
+      </material>
+    </visual>
+		<collision>
+      <origin rpy="0 0 0" xyz="0.5 0 -0.023"/>
+      <geometry>
+        <box size="2.2 0.5 0.05"/>
+      </geometry>
+    </collision>
+    -->
+    <!-- wall left  -->
+    <!--
+    <visual>
+      <origin rpy="0 0 0" xyz="10.0 2.5 0.2"/>
+      <geometry>
+        <box size="30 0.25 0.5"/>
+      </geometry>
+      <material name="road">
+        <color rgba="0.4 0.4 0.5 1"/>
+      </material>
+    </visual>
+		<collision>
+      <origin rpy="0 0 0" xyz="10.0 2.5 0.2"/>
+      <geometry>
+        <box size="30 0.25 0.5"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin rpy="0 0 0" xyz="10.0 -2.5 0.2"/>
+      <geometry>
+        <box size="30 0.25 0.5"/>
+      </geometry>
+      <material name="road">
+        <color rgba="0.4 0.4 0.5 1"/>
+      </material>
+    </visual>
+		<collision>
+      <origin rpy="0 0 0" xyz="10.0 -2.5 0.2"/>
+      <geometry>
+        <box size="30 0.25 0.5"/>
+      </geometry>
+    </collision>
+  -->
   </link>
 </robot>
 

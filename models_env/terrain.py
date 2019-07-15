@@ -1,15 +1,15 @@
 import math
 import random
 
-NUM_VERTS_X = 50
-NUM_VERTS_Y = 50
+NUM_VERTS_X = 80
+NUM_VERTS_Y = 80 #26
 X_OFFSET = 3.0
 Y_OFFSET = 0.0
 totalVerts = NUM_VERTS_X*NUM_VERTS_Y
 totalTriangles = 2*(NUM_VERTS_X-1)*(NUM_VERTS_Y-1)
 offset = 0.0
 TRIANGLE_SIZE = 0.2
-waveheight=0.03
+waveheight=0.07
 gGroundVertices = [None] * totalVerts*3
 gGroundUVVertices = [None] * totalVerts*2
 gGroundIndices = [None] * totalTriangles*3
@@ -22,10 +22,11 @@ for i in range (NUM_VERTS_X):
 		y = (j-NUM_VERTS_Y*0.5)*TRIANGLE_SIZE+Y_OFFSET
 		gGroundVertices[(i+j*NUM_VERTS_X)*3+0] = x
 		gGroundVertices[(i+j*NUM_VERTS_X)*3+1] = y
-		if x>=-0.5 and x<=1.5 and y>=-0.5 and y<=0.5:
+		if x>=-0.5 and x<=1.0 and y>=-0.5 and y<=0.5:
 			gGroundVertices[(i+j*NUM_VERTS_X)*3+2] = 0.0
 		else:
-			gGroundVertices[(i+j*NUM_VERTS_X)*3+2] = waveheight*math.sin(float(i))*math.cos(float(j)+offset)+random.random()*random.random()*waveheight
+			#gGroundVertices[(i+j*NUM_VERTS_X)*3+2] = waveheight*math.sin(float(i))*math.cos(float(j)+offset)+random.random()*random.random()*waveheight
+			gGroundVertices[(i+j*NUM_VERTS_X)*3+2] = random.random()*waveheight
 
 		gGroundUVVertices[(i+j*NUM_VERTS_X)*2+0] = (i-NUM_VERTS_X*0.5)*TRIANGLE_SIZE
 		gGroundUVVertices[(i+j*NUM_VERTS_X)*2+1] = (j-NUM_VERTS_Y*0.5)*TRIANGLE_SIZE
@@ -54,16 +55,8 @@ print("mtllib terrain.mtl")
 print("o Terrain")
 
 for i in range (totalVerts):
-	print("v "),
-	print(gGroundVertices[i*3+0]),
-	print(" "),
-	print(gGroundVertices[i*3+1]),
-	print(" "),
-	print(gGroundVertices[i*3+2])
-	print("vt "),
-	print(gGroundUVVertices[i*2+0]),
-	print(" "),
-	print(gGroundUVVertices[i*2+1])
+	print("v ",gGroundVertices[i*3+0],gGroundVertices[i*3+1],gGroundVertices[i*3+2])
+	print("vt ",gGroundUVVertices[i*2+0],gGroundUVVertices[i*2+1])
 
 print ("s on")
 print ("usemtl Material")

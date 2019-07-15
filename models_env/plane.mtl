@@ -9,7 +9,5 @@ newmtl Material
   Kd 0.5880 0.5880 0.5880
   Ks 0.0000 0.0000 0.0000
   Ke 0.0000 0.0000 0.0000
-  map_Ka checker_blue.tga
-  map_Kd stadium_grass.png
-  
-  
+  map_Ka checker_blue.png
+  map_Kd checker_blue.png

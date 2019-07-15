@@ -104,13 +104,16 @@
       </geometry>
     </collision>
     <inertial>
-      <mass value="0.01"/>
+      <mass value="0.2"/>
       <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
     </inertial>
     <contact>
-      <stiffness value="10000"/>
-      <damping value="10"/>
-      <lateral_friction value="1.0"/>
+        <friction_anchor/>
+        <stiffness value="10000.0"/>
+        <inertia_scaling value="0.1"/>
+        <damping value="10.0"/>
+        <spinning_friction value=".3"/>
+        <lateral_friction value="1"/>
     </contact>
     <visual>
       <origin rpy="0 0 0" xyz="0 0.0 0.01"/>
@@ -197,13 +200,16 @@
       </geometry>
     </collision>
     <inertial>
-      <mass value="0.01"/>
+      <mass value="0.2"/>
       <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
     </inertial>
     <contact>
-      <stiffness value="10000"/>
-      <damping value="10"/>
-      <lateral_friction value="1.0"/>
+        <friction_anchor/>
+        <stiffness value="10000.0"/>
+        <inertia_scaling value="0.1"/>
+        <damping value="10.0"/>
+        <spinning_friction value=".3"/>
+        <lateral_friction value="1"/>
     </contact>
     <visual>
       <origin rpy="0 0 0" xyz="0 0.0 0.01"/>
@@ -211,7 +217,7 @@
         <sphere radius="0.01"/>
       </geometry>
       <material name="white">
-        <color rgba="1.0 1.0 1.0 1.0"/>
+        <color rgba="1 1 1 1"/>
       </material>
     </visual>
   </link>
@@ -290,14 +296,26 @@
       </geometry>
     </collision>
     <inertial>
-      <mass value="0.01"/>
+      <mass value="0.2"/>
       <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
     </inertial>
     <contact>
-      <stiffness value="10000"/>
-      <damping value="10"/>
-      <lateral_friction value="1.0"/>
+        <friction_anchor/>
+        <stiffness value="10000.0"/>
+        <inertia_scaling value="0.1"/>
+        <damping value="10.0"/>
+        <spinning_friction value=".3"/>
+        <lateral_friction value="1"/>
     </contact>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0.0 0.01"/>
+      <geometry>
+        <sphere radius="0.01"/>
+      </geometry>
+      <material name="white">
+        <color rgba="1 1 1 1"/>
+      </material>
+    </visual>
   </link>
 
   <link name="br1_link">
@@ -374,14 +392,26 @@
       </geometry>
     </collision>
     <inertial>
-      <mass value="0.01"/>
+      <mass value="0.2"/>
       <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
     </inertial>
     <contact>
-      <stiffness value="10000"/>
-      <damping value="10"/>
-      <lateral_friction value="1.0"/>
+        <friction_anchor/>
+        <stiffness value="10000.0"/>
+        <inertia_scaling value="0.1"/>
+        <damping value="10.0"/>
+        <spinning_friction value=".3"/>
+        <lateral_friction value="1"/>
     </contact>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0.0 0.01"/>
+      <geometry>
+        <sphere radius="0.01"/>
+      </geometry>
+      <material name="white">
+        <color rgba="1 1 1 1"/>
+      </material>
+    </visual>
   </link>
 
   <link name="mz_link">
@@ -395,11 +425,6 @@
           <mass value="0.0001"/>
           <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
       </inertial>
-      <contact>
-          <stiffness value="10000"/>
-          <damping value="10"/>
-          <lateral_friction value="1.0"/>
-      </contact>
   </link>
   <link name="my_link">
       <collision>
@@ -412,11 +437,6 @@
           <mass value="0.0001"/>
           <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
       </inertial>
-      <contact>
-          <stiffness value="10000"/>
-          <damping value="10"/>
-          <lateral_friction value="1.0"/>
-      </contact>
   </link>
 
   <!-- front left -->
@@ -424,7 +444,7 @@
     <parent link="chassis"/>
     <child link="fl1_link"/>
 
-    <origin xyz="0.097 0.045 0" rpy="0 0 0" />
+    <origin xyz="0.118 0.045 0" rpy="0 0 0" />
     <axis xyz="1 0 0" />
     <limit effort="100" velocity="100" lower="-0.398132" upper="0.698132" />
   </joint>
@@ -433,7 +453,7 @@
     <parent link="fl1_link"/>
     <child link="fl2_link"/>
 
-    <origin xyz="0 0.035 -0.025" rpy="0 0 0" />
+    <origin xyz="0 0.045 -0.025" rpy="0 0 0" />
     <axis xyz="0 1 0" />
     <limit effort="100" velocity="100" lower="-1.22173" upper="1.22173" />
   </joint>
@@ -461,7 +481,7 @@
     <parent link="chassis"/>
     <child link="fr1_link"/>
 
-    <origin xyz="0.097 -0.045 0" rpy="0 0 0" />
+    <origin xyz="0.118 -0.045 0" rpy="0 0 0" />
     <axis xyz="1 0 0" />
     <limit effort="100" velocity="100" lower="-0.698132" upper="0.398132" />
   </joint>
@@ -470,7 +490,7 @@
     <parent link="fr1_link"/>
     <child link="fr2_link"/>
 
-    <origin xyz="0 -0.035 -0.025" rpy="0 0 0" />
+    <origin xyz="0 -0.045 -0.025" rpy="0 0 0" />
     <axis xyz="0 1 0" />
     <limit effort="100" velocity="100" lower="-1.22173" upper="1.22173" />
   </joint>
@@ -498,7 +518,7 @@
     <parent link="chassis"/>
     <child link="bl1_link"/>
 
-    <origin xyz="-0.097 0.045 0" rpy="0 0 0" />
+    <origin xyz="-0.118 0.045 0" rpy="0 0 0" />
     <axis xyz="1 0 0" />
     <limit effort="100" velocity="100" lower="-0.398132" upper="0.698132" />
   </joint>
@@ -507,7 +527,7 @@
     <parent link="bl1_link"/>
     <child link="bl2_link"/>
 
-    <origin xyz="0 0.035 -0.025" rpy="0 0 0" />
+    <origin xyz="0 0.045 -0.025" rpy="0 0 0" />
     <axis xyz="0 1 0" />
     <limit effort="100" velocity="100" lower="-1.22173" upper="1.22173" />
   </joint>
@@ -535,7 +555,7 @@
     <parent link="chassis"/>
     <child link="br1_link"/>
 
-    <origin xyz="-0.097 -0.045 0" rpy="0 0 0" />
+    <origin xyz="-0.118 -0.045 0" rpy="0 0 0" />
     <axis xyz="1 0 0" />
     <limit effort="100" velocity="100" lower="-0.698132" upper="0.398132" />
   </joint>
@@ -544,7 +564,7 @@
     <parent link="br1_link"/>
     <child link="br2_link"/>
 
-    <origin xyz="0 -0.035 -0.025" rpy="0 0 0" />
+    <origin xyz="0 -0.045 -0.025" rpy="0 0 0" />
     <axis xyz="0 1 0" />
     <limit effort="100" velocity="100" lower="-1.22173" upper="1.22173" />
   </joint>

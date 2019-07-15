@@ -1,8 +1,8 @@
 <?xml version="1.0" ?>
-<robot name="plane">
-  <link name="planeLink">
+<robot name="floor">
+  <link name="floor">
     <contact>
-    <lateral_friction value="1"/>
+        <lateral_friction value="1"/>
     </contact>
     <inertial>
       <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -16,7 +16,7 @@
       </geometry>
        <material name="white">
         <color rgba="1 1 1 1"/>
-        <texture filename= "stadium_grass3.jpg"/>
+        <texture filename= "checker_blue.png"/>
       </material>
     </visual>
     <collision>
