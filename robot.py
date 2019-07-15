@@ -107,7 +107,7 @@ class RoboschoolForwardWalkerMujocoXML(RoboschoolForwardWalker, RoboschoolUrdfEn
         self.physics_step_per_second = 240.0 #120.0 #240.0 #240.0
         self.frame_skip = 1
         self.physics_time_step = (1.0/self.physics_step_per_second)
-        self.max_servo_speed = math.radians(120.0)
+        self.max_servo_speed = math.radians(180.0)
         self.AdditiveAnglesClip = self.max_servo_speed*self.physics_time_step
         self.walk_target_x = 1000.0 # 1km  meters
         self.walk_target_z = 0.15
@@ -811,7 +811,7 @@ class RoboschoolForwardWalkerMujocoXML(RoboschoolForwardWalker, RoboschoolUrdfEn
 
         alive +=aliveRecover
         # closer is positive , away is negative
-        maxDesiredTargetSpeed = 0.15
+        maxDesiredTargetSpeed = 0.10
         deltaDistanceVelocity = (self.walk_target_dist_prev-self.walk_target_dist)/self.physics_time_step
         # clamp only positive
         if deltaDistanceVelocity>maxDesiredTargetSpeed:
@@ -1163,7 +1163,7 @@ class RoboschoolForwardWalkerMujocoXML(RoboschoolForwardWalker, RoboschoolUrdfEn
         self.feet_contact_pos_prev = [glm.vec3(0.0),glm.vec3(0.0),glm.vec3(0.0),glm.vec3(0.0)]
         self.lastJointsStatesNonClipped = []
 
-        defaultAngles = [ 0.207928  
+        self.defaultAngles = [ 0.207928  
                         ,0.631224  
                         ,-1.173827  
                         ,-0.207928  
@@ -1197,7 +1197,7 @@ br3  -67.26 -1.173827
                 j.zCycle = [0.0,0.0,0.0]
                 j.zCycleDir = [0.0,0.0,0.0]
                 j.localTargetCycle = self.flMinArea+(self.flMaxArea-self.flMinArea)*0.5
-                j.servo_target = defaultAngles[i]
+                j.servo_target = self.defaultAngles[i]
                 j.servo_target_prev = j.servo_target
                 j.type_1_servo_target = j.servo_target
                 j.set_servo_target(j.servo_target,self.servo_kp,self.servo_kd,self.servo_maxTorque)
