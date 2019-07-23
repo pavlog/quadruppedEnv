@@ -112,7 +112,6 @@
         <stiffness value="10000.0"/>
         <inertia_scaling value="0.1"/>
         <damping value="10.0"/>
-        <spinning_friction value=".3"/>
         <lateral_friction value="1"/>
     </contact>
     <visual>
@@ -208,7 +207,6 @@
         <stiffness value="10000.0"/>
         <inertia_scaling value="0.1"/>
         <damping value="10.0"/>
-        <spinning_friction value=".3"/>
         <lateral_friction value="1"/>
     </contact>
     <visual>
@@ -304,7 +302,6 @@
         <stiffness value="10000.0"/>
         <inertia_scaling value="0.1"/>
         <damping value="10.0"/>
-        <spinning_friction value=".3"/>
         <lateral_friction value="1"/>
     </contact>
     <visual>
@@ -400,7 +397,6 @@
         <stiffness value="10000.0"/>
         <inertia_scaling value="0.1"/>
         <damping value="10.0"/>
-        <spinning_friction value=".3"/>
         <lateral_friction value="1"/>
     </contact>
     <visual>

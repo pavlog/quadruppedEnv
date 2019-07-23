@@ -1,8 +1,8 @@
 import math
 import random
 
-NUM_VERTS_X = 80
-NUM_VERTS_Y = 80 #26
+NUM_VERTS_X = 100
+NUM_VERTS_Y = 100 #26
 X_OFFSET = 3.0
 Y_OFFSET = 0.0
 totalVerts = NUM_VERTS_X*NUM_VERTS_Y
@@ -22,7 +22,7 @@ for i in range (NUM_VERTS_X):
 		y = (j-NUM_VERTS_Y*0.5)*TRIANGLE_SIZE+Y_OFFSET
 		gGroundVertices[(i+j*NUM_VERTS_X)*3+0] = x
 		gGroundVertices[(i+j*NUM_VERTS_X)*3+1] = y
-		if x>=-0.5 and x<=1.0 and y>=-0.5 and y<=0.5:
+		if x>=-1.0 and x<=1.0 and y>=-0.5 and y<=0.5:
 			gGroundVertices[(i+j*NUM_VERTS_X)*3+2] = 0.0
 		else:
 			#gGroundVertices[(i+j*NUM_VERTS_X)*3+2] = waveheight*math.sin(float(i))*math.cos(float(j)+offset)+random.random()*random.random()*waveheight
