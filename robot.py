@@ -42,6 +42,15 @@ except ImportError:
 class DummyJoint(object):
     pass
 
+dumpMemory = False
+
+def getCurrentMemoryUsage():
+    import os
+    import psutil
+    process = psutil.Process(os.getpid())
+    return process.memory_info()[0]
+
+
 class RoboschoolForwardWalkerMujocoXML(RoboschoolForwardWalker, RoboschoolUrdfEnv):
     def __init__(self, fn, robot_name):
 
@@ -63,8 +72,17 @@ class RoboschoolForwardWalkerMujocoXML(RoboschoolForwardWalker, RoboschoolUrdfEn
         self.check90Angles = True
         self.goalRandomTargetDirClamp = glm.radians(45.0)
         self.goalRandomChassisDirClamp = glm.radians(20.0)
-        self.progressDirMultiplier = 1.0
-
+        self.progressDirChassisMultiplier = 1.0
+        self.progressDirTargetMultiplier = 1.0
+        self.yawMultiplier = 0.0
+        self.stopOnBadAlive = True
+        self.aliveMultiplier = 1.0
+        self.yawRewardMultiplier = 1.0
+        self.holdingTorqueMultiplier = 1.0
+        self.energyCostMultiplier = 2.0
+        self.useLegsHeightReward = True
+        self.aliveMultiplierClampMax = 1.0
+        self.maxAnglesPerSec = 180.0
 
 
 
@@ -81,7 +99,7 @@ class RoboschoolForwardWalkerMujocoXML(RoboschoolForwardWalker, RoboschoolUrdfEn
         self.velObservations = 0
         sensorsObservations = 4 #4 legs from 0 or 1
 #        rotationObservation = 3 #roll pith yaw
-        rotationObservation = 4 #roll pith sin(yaw) cos(yaw)
+        rotationObservation = 2 #roll pith
         sinCosToTarget = 2 # sin cos from angle to target
         servoObservation = 12 # rel angles
         jointVelocities = 0
@@ -113,13 +131,11 @@ class RoboschoolForwardWalkerMujocoXML(RoboschoolForwardWalker, RoboschoolUrdfEn
             numObservation += baseObservations
         self.servo_kp = 0.3
         self.servo_kd = 0.9
-        self.servo_maxTorque = 2.0
+        self.servo_maxTorque = 1.0
         self.time = 0.0
         self.physics_step_per_second = 240.0 #120.0 #240.0 #240.0
         self.frame_skip = 1
         self.physics_time_step = (1.0/self.physics_step_per_second)
-        self.max_servo_speed = math.radians(180.0)
-        self.AdditiveAnglesClip = self.max_servo_speed*self.physics_time_step
         # pos target
         self.walk_target_x = 1000.0 # 1km  meters
         self.walk_target_z = 0.15
@@ -499,6 +515,16 @@ class RoboschoolForwardWalkerMujocoXML(RoboschoolForwardWalker, RoboschoolUrdfEn
         #print("tm",(time.time()-state_start)*1000.0)
         return point
 
+    def getLeg4XYZFromAngles_j2Space(self,angles,len1,len2):
+        #state_start = time.time()
+        resultTm = glm.mat4x4()
+        resultTm = glm.rotate(resultTm,angles[0], glm.vec3([0.0,1.0,0.0]))
+        resultTm = glm.translate(resultTm,len1)
+        resultTm = glm.rotate(resultTm,angles[1], glm.vec3([0.0,1.0,0.0]))
+        resultTm = glm.translate(resultTm,len2)
+        point = glm.vec3(glm.column(resultTm,3))
+        return point
+
     def rangeNormalize(self,value,minArea,maxArea):
         areaSize = maxArea-minArea
         clipped = np.clip(value,minArea,maxArea)
@@ -591,6 +617,7 @@ class RoboschoolForwardWalkerMujocoXML(RoboschoolForwardWalker, RoboschoolUrdfEn
         #state_start = time.time()
         body_pose = self.robot_body.pose()
         
+        self.prev_body_rpy = self.body_rpy
         self.body_rpy = body_pose.rpy()
         r, p, yaw = self.body_rpy
 
@@ -652,9 +679,6 @@ class RoboschoolForwardWalkerMujocoXML(RoboschoolForwardWalker, RoboschoolUrdfEn
         observationsBase = np.array([
             r, 
             p, 
-            np.sin(yaw),
-            np.cos(yaw),
-#            yaw/glm.pi(),
             np.sin(self.angle_to_target),
             np.cos(self.angle_to_target),
             np.sin(self.angle_to_desired_chassis_yaw),
@@ -797,7 +821,16 @@ class RoboschoolForwardWalkerMujocoXML(RoboschoolForwardWalker, RoboschoolUrdfEn
         x = np.clip((x - edge0) / (edge1 - edge0), 0.0, 1.0); 
         #Evaluate polynomial
         return x * x * (3.0 - 2.0 * x)
+            
+    def closesPointOnLine(self,point,a,b):
+        LineLength = glm.distance(a,b)
+        Vector = point-a
+        LineDirection = (b - a) / LineLength
+        Distance = glm.dot(Vector, LineDirection)
+        return a + LineDirection * Distance
 
+
+    #@profile
     def stepPG(self, a):
         #cp.enable()
         self.time+=self.physics_time_step
@@ -836,10 +869,16 @@ class RoboschoolForwardWalkerMujocoXML(RoboschoolForwardWalker, RoboschoolUrdfEn
         if alive<=-1.0 and self.frame==0:
              self.alive_bonus(state)
 
-        done = alive <= -1.0
+        if self.useLegsHeightReward:
+            alive=min(alive,self.legs_height_reward(state))
+
+        done = False
+        if self.stopOnBadAlive:
+            done = alive <= -1.0
         if not np.isfinite(state).all():
             print("~INF~", state)
             done = True
+
 
         alive +=aliveRecover
         # closer is positive , away is negative
@@ -861,69 +900,48 @@ class RoboschoolForwardWalkerMujocoXML(RoboschoolForwardWalker, RoboschoolUrdfEn
         '''
         #speed = glm.length(self.movement_per_frame)/self.physics_time_step
         # current robot desired speed is a 10cm per second so 1 is a 0.1
-        progressPositiveMultiplier = 10.0
+        progressPositiveMultiplier = 5.0
         progressPositiveBias = 0.0
-        progressNegativeMultiplier = 10.0
+        progressNegativeMultiplier = 5.0
         progressNegativeBias = -0.0
         if progress>0.0:
             progress=progress*progressPositiveMultiplier+progressPositiveBias
         else:
             progress=progress*progressNegativeMultiplier+progressNegativeBias
 
-        progress+=newGoal*1000.0
+        #progress+=newGoal*1000.0
 
         chassisDir = glm.vec3(self.bodyRot * glm.vec4([1.0,0.0,0.0,0.0]))
         chassisDir[2] = 0.0
         chassisDir = glm.normalize(chassisDir)
 
-        progressDir = 0.0
-        progressDirMultiplier = 2.0
-        progressDir = glm.dot(self.desiredChassisDir,chassisDir)
-        #progressDir = np.clip(progressDir,-1.0,1.0)
-        #progressDir = np.clip(math.acos(progressDir),0.0,np.pi)
-        #try:
-        #    progressDir = np.clip(math.acos(progressDir),-1.0,1.0)
-        #except ValueError:
-        #    print(self.desiredChassisDir,progressDir,chassisDir,flush=True)  
-        #progressDir = (1.0-progressDir/np.pi)*2.0-1.0
-        #progressDir = self.smoothstep(-1.0,1.0,progressDir)
-        #-x^0.5+1
+        progressDirChassis = 0.0
+        progressDirChassis = glm.dot(self.desiredChassisDir,chassisDir)
+        progressDirChassis = progressDirChassis
+        progressDirChassis*=self.progressDirChassisMultiplier
 
-        
+        targetDir = self.vecToTarget
+        targetDir[2] = 0.0
+        targetDir = glm.normalize(targetDir)
 
-        progressDir*=progressDirMultiplier*self.progressDirMultiplier
-        #progressDir += progressDir
+        progressDirTarget = 0.0
+        progressDirTarget = glm.dot(targetDir,chassisDir)
+        progressDirTarget = progressDirTarget
+        progressDirTarget*=self.progressDirTargetMultiplier
 
-        '''
-        progressDirMultiplier = 0.2                  #10.0
-        self.moveDirNormalizer = glm.normalize(self.movement_per_frame)
-        progressDir = glm.dot(self.moveDirNormalizer,self.movement_dir)
-        progressDir*=progressDirMultiplier
-        progress += progressDir
+        energyCost = 0.0
+        for n,j in enumerate(self.ordered_joints):
+            jEnergyCost = -abs(j.targetAngleDeltaFrame)
+            jEnergyCost*=j.energy_cost
+            energyCost+=jEnergyCost
 
-        progressDirMultiplier = 0.1 #10.0
-        progressDir = glm.dot(self.body_frontVec,self.movement_dir)
-        progressDir*=progressDirMultiplier
-        progress += progressDir
-        '''
-        
-        '''
-        if progress<0:
-            progress = -1.0
-        else:
-            progress = 1.0
-        '''
-        '''
-        if self.walk_target_dist>0.1 and self.prev_body_xyz is not None:
-            vecStep = [self.prev_body_xyz[0] - self.body_xyz[0],self.prev_body_xyz[1] - self.body_xyz[1]] #, self.prev_body_xyz[2] - self.body_xyz[2]]
-            vecMovement = np.linalg.norm( vecStep )
-            minSpeedToPunishPerSec = 0.01 # 1 cm
-            minMovePerFrame = minSpeedToPunishPerSec/self.numStepsPerSecond
-            if vecMovement<minMovePerFrame:
-                progress = -1
-        '''
+        energyCost  *= self.energyCostMultiplier
+        self.reward_energy.append(energyCost)
+
+
+        idealDiffLimit = 0.0
         atlimits_cost = 0.0
-        maxServoAnglePerFrame = self.max_servo_speed*self.physics_time_step
+        #maxServoAnglePerFrame = self.max_servo_speed*self.physics_time_step
         angleDiffSpeed_cost_max = 0.0
         angleDiffSpeed_cost_min = 1.0
         angleDiffSpeed_cost = 0.0
@@ -945,10 +963,11 @@ class RoboschoolForwardWalkerMujocoXML(RoboschoolForwardWalker, RoboschoolUrdfEn
 
             #limits
 
-            angleDiff = j.servo_target-j.idealTargetAngle
+            angleDiff = j.servo_target-j.default_idle_angle
 
-            angleOk = math.radians(20) # math.radian maxServoAnglePerFrame #np.pi*0.25
+            angleOk = math.radians(45) # math.radian maxServoAnglePerFrame #np.pi*0.25
             ratio = abs(np.clip(angleDiff,-angleOk,angleOk))/angleOk
+            idealDiffLimit+=1.0-ratio
             #ratio = min(abs(j.targetAngleDeltaFrame),maxServoAnglePerFrame)/maxServoAnglePerFrame
             ratio*=j.energy_cost
             ratio*=j.inAirCost
@@ -962,6 +981,14 @@ class RoboschoolForwardWalkerMujocoXML(RoboschoolForwardWalker, RoboschoolUrdfEn
             angleDiffSpeed_cost_min = min(ratio,angleDiffSpeed_cost_min)
             angleDiffSpeed_cost_max = max(ratio,angleDiffSpeed_cost_max)
             '''
+
+
+        idealDiffLimit=idealDiffLimit/12.0*4.0
+
+        idealDiffLimit = 0.0
+
+        self.reward_idealDiff.append(idealDiffLimit)
+
         '''
         lerpFactor = 0.5
         angleDiffSpeed_cost = angleDiffSpeed_cost_min+lerpFactor*(angleDiffSpeed_cost_max-angleDiffSpeed_cost_min)
@@ -1005,7 +1032,14 @@ class RoboschoolForwardWalkerMujocoXML(RoboschoolForwardWalker, RoboschoolUrdfEn
 
         
         self.rewards_progress.append(progress)
-        self.rewards_progressDir.append(progressDir)
+        self.rewards_progressDirChassis.append(progressDirChassis)
+        self.rewards_progressDirTarget.append(progressDirTarget)
+
+        alive=alive*self.aliveMultiplier
+
+        if alive>self.aliveMultiplierClampMax:
+            alive = self.aliveMultiplierClampMax
+        
         self.reward_alive.append(alive)
 
         # sync prev local pos
@@ -1027,6 +1061,11 @@ class RoboschoolForwardWalkerMujocoXML(RoboschoolForwardWalker, RoboschoolUrdfEn
         joints1 = [self.jdict["fl1"],self.jdict["fr1"],self.jdict["bl1"],self.jdict["br1"]]
         joints2 = [self.jdict["fl2"],self.jdict["fr2"],self.jdict["bl2"],self.jdict["br2"]]
 
+        yawReward = 0.0
+        yawReward = -abs(self.body_rpy[2]-self.prev_body_rpy[2])/self.physics_time_step
+        yawReward=yawReward*self.yawRewardMultiplier
+        self.reward_yaw.append(yawReward)
+
         gravityProjReward = 0.0
         okAngle = math.cos(glm.radians(10.0))
         for i in range(4):
@@ -1045,29 +1084,44 @@ class RoboschoolForwardWalkerMujocoXML(RoboschoolForwardWalker, RoboschoolUrdfEn
         gravityProjReward = (gravityProjReward - 0.5)*2.0
         gravityProjReward = 0.0
 
+        # torque
         holdingTorque = 0.0
+        worldGravity = glm.vec3(self.bodyRotNoYaw * glm.vec4(0.0,0.0,-1.0,0.0))
+        for i in range(4):
+            torque = 0.0
+            if self.feet_contact[i]>0.5:
+                # relative j2
+                legWorldContact = curLocals[i]-joints2[i].jointsLocalPos
+                legWorldContact = glm.vec3(self.bodyRotNoYaw * glm.vec4(legWorldContact,0.0))
+                point = self.closesPointOnLine(legWorldContact,glm.vec3(0.0,0.0,0.0),glm.vec3(0.0,0.0,0.0)-worldGravity)
+                pointDist = glm.distance(point,legWorldContact)
+                torque+=pointDist
+            else:
+                torque = 0.0
+            #dist = glm.clamp(dist-0.5,0.0,1.0)*2.0
+            holdingTorque+=torque
+
+        #TODO:check j3-j4 link dot product with gravity
+
+        # negate to act like enrgy cost
+        holdingTorque=-holdingTorque*self.holdingTorqueMultiplier
+        self.reward_torque.append(holdingTorque)
+
+        ''' wip
+        projected distance to gravityVector
+        distToGravity = 0.0
+        # to force body be upper
         for i in range(4):
             if self.feet_contact[i]>0.0:
-                '''
-                A = curLocals[i]
-                B = curLocals[i]-joints2[i].jointsLocalPos-glm.vec3(0.0,joints1[i].jointsLocalPos[1],0.0)
-                C = B-glm.vec3(0.0,0.0,-1.0)
-                d = C - B
-                v = A - B
-                t = glm.dot(v,d)
-                res = t*x1x2
-                dist = glm.distance(curLocals[i],res)
-                '''
-                dir2 = curLocals[i]-joints2[i].jointsLocalPos-glm.vec3(0.0,joints1[i].jointsLocalPos[1],0.0)
-                x1x0 = curLocals[i]
-                x1x2 = glm.vec3(0.0,0.0,-1.0)
-                t = glm.dot(x1x0,x1x2)
-                res = t*x1x2
-                dist = glm.distance(curLocals[i],res)
+                legWorldContact = glm.normalize(glm.vec3(self.bodyRotNoYaw * glm.vec4(curLocals[i],0.0)))
+                dist = glm.dot(legWorldContact,worldGravity)
             else:
-                dist = 0.0
-            value = dist*10.0
-            holdingTorque-=value
+                dist = 1.0
+            dist = glm.clamp(dist-0.5,0.0,1.0)
+            holdingTorque+=dist
+
+        self.reward_torque.append(holdingTorque)
+        '''
 
         simulatedReward = 0.0
         if self.analyticReward:
@@ -1076,17 +1130,19 @@ class RoboschoolForwardWalkerMujocoXML(RoboschoolForwardWalker, RoboschoolUrdfEn
                     done = True
 
                 sumDiff = 0.0
-                angleMaxDif = glm.radians(10.0)
+                angleMaxDif = glm.radians(45.0)
                 for i in range(len(a)):
                     simAction = self.simAngles[i]
                     diff = self.ordered_joints[i].servo_target-simAction
                     if abs(diff)<angleMaxDif:
                         sumDiff+=1.0-abs(diff)/angleMaxDif
                     #sumDiff += diff*diff
-                simulatedReward = np.clip((sumDiff/12.0)*3,0.0,1.0)
+                simulatedReward = sumDiff
+                #simulatedReward = np.clip((sumDiff/12.0)*3,0.0,1.0)
                 #simulatedReward = simulatedReward*simulatedReward
                 #simulatedReward = math.exp(-0.1*simulatedReward)
                 #simulatedReward = simulatedReward
+                #simulatedReward=simulatedReward*4.0
                 self.stepMotionCapture()
             elif self.analyticRewardType==1:
 
@@ -1095,8 +1151,11 @@ class RoboschoolForwardWalkerMujocoXML(RoboschoolForwardWalker, RoboschoolUrdfEn
                     if curLocalsZ[i]<prevLocalsZ[i]:
                         curLegsZ[i] = -1
 
-                legFreqUpDown = 0.6 # up down
-                starts = [0.0,legFreqUpDown*0.5,legFreqUpDown,legFreqUpDown*1.5]
+                legFreqUpDown = 0.5 # up down
+                #starts = [0.0,legFreqUpDown*0.5,legFreqUpDown,legFreqUpDown*1.5]
+                # diagonallegs at once
+                # fl,fr,bl,br
+                starts = [0.0,legFreqUpDown,0.0,legFreqUpDown]
                 cycleLen = starts[-1]+legFreqUpDown
 
                 self.cycleTime = self.time % cycleLen
@@ -1117,11 +1176,32 @@ class RoboschoolForwardWalkerMujocoXML(RoboschoolForwardWalker, RoboschoolUrdfEn
                     diff = curLegsZ[i]*simAction # just sign
                     if diff>0:
                         sumDiff=sumDiff*2.0
-                simulatedReward = np.clip(sumDiff/8.0,0.0,1.0)
+
+                simulatedReward = sumDiff/8.0 #np.clip(sumDiff/8.0,0.0,1.0)
+            elif self.analyticRewardType==2:
+                legFreqUpDown = 0.6 # up down
+                # diagonallegs at once
+                # fl,fr,bl,br
+                starts = [0.0,legFreqUpDown,0.0,legFreqUpDown]
+                contacts = [0,1,0,1]
+                cycleLen = starts[-1]+legFreqUpDown
+
+                self.cycleTime = self.time % cycleLen
+
+                rewardSim = 1.0
+                for n in range(len(starts)):
+                    cycleStart = starts[n]
+                    if self.cycleTime>=cycleStart and self.cycleTime<=(cycleStart+legFreqUpDown):
+                        if self.feet_contact[n]==True and contacts[n]==1:
+                            rewardSim = rewardSim*2.0
+                        elif self.feet_contact[n]==False and contacts[n]==0:
+                            rewardSim = rewardSim*2.0
+                simulatedReward = rewardSim/16.0 #np.clip(sumDiff/4.0,0.0,1.0)
 
         self.reward_sim.append(simulatedReward)
 
-        self.reward_angleDiff.append((angleDiffSpeed_cost+atlimits_cost+legSlideCost+gravityProjReward+holdingTorque)*self.anglesRewardMultiplier)
+        self.reward_angleDiff.append((angleDiffSpeed_cost+atlimits_cost+legSlideCost+gravityProjReward)*self.anglesRewardMultiplier)
+
 
         if self.simRewardOnly:
             self.rewards = [simulatedReward]
@@ -1129,9 +1209,14 @@ class RoboschoolForwardWalkerMujocoXML(RoboschoolForwardWalker, RoboschoolUrdfEn
             self.rewards = [
                 alive,
                 progress,
-                progressDir,
+                progressDirChassis,
+                progressDirTarget,
+                yawReward,
                 self.reward_angleDiff[-1],
                 simulatedReward,
+                holdingTorque,
+                idealDiffLimit,
+                energyCost,
                 ]
 
         self.frame  += 1
@@ -1142,17 +1227,48 @@ class RoboschoolForwardWalkerMujocoXML(RoboschoolForwardWalker, RoboschoolUrdfEn
             done = True
 
             reward_progress = np.sum(self.rewards_progress)
-            reward_progressDir = np.sum(self.rewards_progressDir)
+            reward_progressDirChassis = np.sum(self.rewards_progressDirChassis)
+            reward_progressDirTarget = np.sum(self.rewards_progressDirTarget)
             reward_angleDiff = np.sum(self.reward_angleDiff)
             reward_alive = np.sum(self.reward_alive)
             reward_sim = np.sum(self.reward_sim)
-            rewardTotal = reward_progress+reward_progressDir+reward_alive+reward_sim+reward_angleDiff
-            rewardSummary = { "alive":reward_alive, "progress":reward_progress, "servo":reward_angleDiff, "distToTarget":self.walk_target_dist,"simReward":reward_sim, "episode_steps":self.frame, "episode_reward":rewardTotal, 'robot_endpos':self.body_xyz, 'goal':self.goal_index  }
+            reward_yaw = np.sum(self.reward_yaw)
+            reward_torque = np.sum(self.reward_torque)
+            reward_idealDiff = np.sum(self.reward_idealDiff)
+            reward_energy = np.sum(self.reward_energy)
+            rewardTotal = reward_energy+reward_progress+reward_progressDirChassis+reward_progressDirTarget+reward_alive+reward_sim+reward_angleDiff+reward_yaw+reward_torque+reward_idealDiff
+            rewardSummary = {"reward":rewardTotal, "steps":self.frame}
+            rewardSummary.update({"progress":reward_progress})
+            if reward_progressDirChassis!=0.0:
+                rewardSummary.update({"dirChassis":reward_progressDirChassis})
+            if reward_progressDirTarget!=0.0:
+                rewardSummary.update({"dirTarget":reward_progressDirTarget})
+            if  reward_alive!=0.0:
+                rewardSummary.update({"alive":reward_alive})
+            if  reward_angleDiff!=0.0:
+                rewardSummary.update({"servo":reward_angleDiff})
+            if  reward_yaw!=0.0:
+                rewardSummary.update({"yaw_reward":reward_yaw})
+            if  reward_torque!=0.0:
+                rewardSummary.update({"torque_reward":reward_torque})
+            if  reward_idealDiff!=0.0:
+                rewardSummary.update({"idealDiff_reward":reward_idealDiff})
+            if  reward_energy!=0.0:
+                rewardSummary.update({"energy":reward_energy})
+            if  reward_sim!=0.0:
+                rewardSummary.update({"simReward":reward_sim})
+            rewardSummary.update({"distToTarget":self.walk_target_dist, 'robot_endpos':self.body_xyz, 'goal':self.goal_index  })
 
             self.reward_alive.clear()
             self.rewards_progress.clear()
-            self.rewards_progressDir.clear()
+            self.rewards_progressDirChassis.clear()
+            self.rewards_progressDirTarget.clear()
             self.reward_angleDiff.clear()
+            self.reward_yaw.clear()
+            self.reward_torque.clear()
+            self.reward_energy.clear()
+            self.reward_idealDiff.clear()
+            self.reward_sim.clear()
             #find projection to target vector to figureout dist walked
             #distWalked = np.linalg.norm( [self.body_xyz[1],self.body_xyz[0]])
             #print("Dist Walked: ",distWalked)
@@ -1160,15 +1276,18 @@ class RoboschoolForwardWalkerMujocoXML(RoboschoolForwardWalker, RoboschoolUrdfEn
         if bool(done) and self.frame==1:
             print("First frame done - something bad happended")
         stepReward = sum(self.rewards)
+        #if math.isnan(stepReward):
+        #    print("error",flush=true)
         self.reward += stepReward
         if self.ActionIsAngles:
             self.HUD(state, a, done, "{:0.2f}".format(self.walk_target_dist))
         else:
             self.HUD(state, a, done, "{:0.2f} {:0.2f},{:0.2f},{:0.2f},{:0.2f}".format(self.walk_target_dist,self.jdict['fl1'].linkPos[2],self.jdict['fr1'].linkPos[2],self.jdict['bl1'].linkPos[2],self.jdict['br1'].linkPos[2]))
-        #cp.disable()
-        #cp.print_stats()
-        if done:
-            debugBrek = 0
+        
+        #print(state, stepReward, bool(done), rewardSummary,flush=True)
+        #print(state, stepReward, bool(done), rewardSummary,flush=True)
+        #if self.frame%100==0:
+        #    print(stepReward, bool(done), rewardSummary,flush=True)
         return state, stepReward, bool(done), rewardSummary
 
     def HUD(self, s, a, done, msg=''):
@@ -1189,8 +1308,8 @@ class RoboschoolForwardWalkerMujocoXML(RoboschoolForwardWalker, RoboschoolUrdfEn
         return self.stepPG(a)
 
     def setupEnergyCost(self,link):
-        self.jdict[link+"1"].energy_cost = 1.7 # full link mass
-        self.jdict[link+"2"].energy_cost = 2.0 # link mass
+        self.jdict[link+"1"].energy_cost = 1.0 # full link mass
+        self.jdict[link+"2"].energy_cost = 1.0 # link mass
         self.jdict[link+"3"].energy_cost = 1.0
         self.jdict[link+"1"].angle_cost = 0.5 # full link mass
         self.jdict[link+"2"].angle_cost = 0.8 # link mass
@@ -1243,15 +1362,21 @@ class RoboschoolForwardWalkerMujocoXML(RoboschoolForwardWalker, RoboschoolUrdfEn
         self.sphere = self.scene.cpp_world.debug_sphere(self.walk_target_x,self.walk_target_y,self.walk_target_z,0.05,0xFFFFFF)
         self.sphereDir = self.scene.cpp_world.debug_sphere(self.walk_target_x+self.goalDesiredDir[0]*0.1,self.walk_target_y+self.goalDesiredDir[1]*0.1,self.walk_target_z,0.01,0xFFFFFF)
 
-
+    #@profile
     def robot_specific_reset(self):
 
+        self.max_servo_speed = math.radians(self.maxAnglesPerSec)
+        self.AdditiveAnglesClip = self.max_servo_speed*self.physics_time_step
+
+
+        if dumpMemory:
+            print("Reset before:",getCurrentMemoryUsage())
         global episode_index
         episode_index+=1
 
         self.goal_index = 0
         randomInitDir = random.choice([True, False])
-        self.goals = [ glm.vec3(1.5,0.0,0.15), glm.normalize(glm.vec2(1.0,0.0))]
+        self.goals = [ glm.vec3(1.5,0.0,0.20), glm.vec2(1.0,0.0)]
         backAngle = False
         if randomInitDir and self.randomInitDir:
             self.goals[0] = glm.vec3(-1.5,0.0,0.15)
@@ -1281,10 +1406,15 @@ class RoboschoolForwardWalkerMujocoXML(RoboschoolForwardWalker, RoboschoolUrdfEn
 
         self.curTime = 0.0
         self.rewards_progress = []
-        self.rewards_progressDir = []
+        self.rewards_progressDirChassis = []
+        self.rewards_progressDirTarget = []
         self.reward_angleDiff = []
         self.reward_alive = []
         self.reward_sim = []
+        self.reward_yaw= []
+        self.reward_torque= []
+        self.reward_idealDiff= []
+        self.reward_energy= []
         self.ordered_joints = []
         self.jdict = {}
         self.feet_contact_time = [0.0,0.0,0.0,0.0]
@@ -1305,20 +1435,6 @@ class RoboschoolForwardWalkerMujocoXML(RoboschoolForwardWalker, RoboschoolUrdfEn
                         ,-0.207928  
                         ,0.631224  
                         ,-1.173827  ]
-        '''
-fl1   11.91 0.207928  
-fl2   36.17 0.631224  
-fl3  -67.26 -1.173827  
-fr1  -11.91 -0.207928  
-fr2   36.17 0.631224  
-fr3  -67.26 -1.173827  
-bl1   11.91 0.207928  
-bl2   36.17 0.631224  
-bl3  -67.26 -1.173827  
-br1  -11.91 -0.207928  
-br2   36.17 0.631224  
-br3  -67.26 -1.173827  
-        '''
         self.jointToUse = ["fl1","fl2","fl3","fr1","fr2","fr3","bl1","bl2","bl3","br1","br2","br3"]
         for i,j in enumerate(self.urdf.joints):
             if j.name in self.jointToUse:
@@ -1328,6 +1444,7 @@ br3  -67.26 -1.173827
                 j.zCycleDir = [0.0,0.0,0.0]
                 j.localTargetCycle = self.flMinArea+(self.flMaxArea-self.flMinArea)*0.5
                 j.servo_target = self.defaultAngles[i]
+                j.default_idle_angle = j.servo_target
                 j.servo_target_prev = j.servo_target
                 j.type_1_servo_target = j.servo_target
                 j.set_servo_target(j.servo_target,self.servo_kp,self.servo_kd,self.servo_maxTorque)
@@ -1398,8 +1515,9 @@ br3  -67.26 -1.173827
         self.setupEnergyCost("br")
  
         RoboschoolForwardWalker.robot_specific_reset(self)
-        self.body_xyz = [0.0,0,0.18]
+        self.body_xyz = [0.0,0,0.23]
         self.body_rpy = [0.0,0.0,self.spawn_yaw] #np.pi/2.0]
+        self.prev_body_rpy = self.body_rpy
         self.move_robot(self.body_xyz[0],self.body_xyz[1],self.body_xyz[2],self.body_rpy[0],self.body_rpy[1],self.body_rpy[2])
         self.numStepsPerSecond = 1.0/self.physics_time_step
         self.numSecondsToTrack = 1.0
@@ -1418,6 +1536,10 @@ br3  -67.26 -1.173827
             #self.robotLib.executeCommand("cmd#testAction")
             #self.robotLib.executeCommand("cmd#initIdle")
 
+        if dumpMemory:
+            print("Reset after:",getCurrentMemoryUsage())
+
+
     def move_robot(self, init_x, init_y, init_z, init_rx=0, init_ry=0, init_rz=0):
         "Used by multiplayer stadium to move sideways, to another running lane."
         self.cpp_robot.query_position()
@@ -1428,17 +1550,25 @@ br3  -67.26 -1.173827
         self.start_pos_x, self.start_pos_y, self.start_pos_z = init_x, init_y, init_z
 
     def reset(self):
+        if dumpMemory:
+            print("Reset before:",getCurrentMemoryUsage())
         if hasattr(self,"scene")==False or self.scene is None:
             self.scene = self.create_single_player_scene()
         if not self.scene.multiplayer:
             randomLevel = self.advancedLevel
             if self.advancedLevelRandom:
                 randomLevel = random.choice([True, False])
+            self.urdf = None
+            self.stadium = None
             self.scene.episode_restart(randomLevel,self.addObstacles)
 
         pose = cpp_household.Pose()
         #import time
         #t1 = time.time()
+        if dumpMemory:
+            print("Reset before1:",getCurrentMemoryUsage())
+
+        self.urdf = None
         self.urdf = self.scene.cpp_world.load_urdf(
             self.model_urdf,
             pose,
@@ -1446,6 +1576,9 @@ br3  -67.26 -1.173827
             self.self_collision)
         #t2 = time.time()
         #print("URDF load %0.2fms" % ((t2-t1)*1000))
+
+        if dumpMemory:
+            print("Reset before2:",getCurrentMemoryUsage())
 
         self.ordered_joints = []
         self.jdict = {}
@@ -1475,13 +1608,21 @@ br3  -67.26 -1.173827
         #print("ordered_joints", len(self.ordered_joints))
         self.robot_specific_reset()
         self.cpp_robot.query_position()
+        if dumpMemory:
+            print("Reset before3:",getCurrentMemoryUsage())
         self.walk_target_dist_prev = self.getTargetDist()
         self.walk_target_dist = self.walk_target_dist_prev
         s = self.calc_state()
         self.potential = self.calc_potential()
+        if dumpMemory:
+            print("Reset before4:",getCurrentMemoryUsage())
         self.camera = self.scene.cpp_world.new_camera_free_float(self.VIDEO_W, self.VIDEO_H, "video_camera")
+        if dumpMemory:
+            print("Reset before5:",getCurrentMemoryUsage())
         #self.camera.move_and_look_at(0,1,0,0,0,0)
         self.end_reset()
+        if dumpMemory:
+            print("Reset after:",getCurrentMemoryUsage())
         return s
 
     def cycleLeg(self,j0,index,target,minArea,maxArea):
@@ -1888,6 +2029,12 @@ br3  -67.26 -1.173827
             self.jdict["bl3"].newCurTarget = math.radians(-45)
             self.jdict["br3"].newCurTarget = math.radians(-45)
 
+        # check all legs j2,j3 end effectors limit box
+        self.processEndEffectorLimits(self.jdict["fl1"],self.jdict["fl2"],self.jdict["fl3"])
+        self.processEndEffectorLimits(self.jdict["fr1"],self.jdict["fr2"],self.jdict["fr3"])
+        self.processEndEffectorLimits(self.jdict["bl1"],self.jdict["bl2"],self.jdict["bl3"])
+        self.processEndEffectorLimits(self.jdict["br1"],self.jdict["br2"],self.jdict["br3"])
+
         for n,j in enumerate(self.ordered_joints):
             curTarget = j.newCurTarget
 
@@ -1942,11 +2089,52 @@ br3  -67.26 -1.173827
             j.servo_target_prev = j.servo_target
             j.servo_target = curTarget
 
-            #j.servo_target =  math.sin(self.time)*np.pi*0.3
-            #print(j.servo_target," ",end='')
+
+
+        for n,j in enumerate(self.ordered_joints):
             j.set_servo_target(j.servo_target,self.servo_kp,self.servo_kd,self.servo_maxTorque)
-            #j.set_motor_torque( self.power*j.power_coef*float(np.clip(a[n], -1, +1)) )
-        #print('')
+
+    def processEndEffectorLimits(self,j1,j2,j3):
+        angleJ1 = j1.servo_target
+
+        minGoodAngle = glm.radians(-70)
+        if (j2.servo_target+j3.servo_target)<minGoodAngle:
+            j3.servo_target = minGoodAngle
+
+        legLocal = self.getLeg4XYZFromAngles_j2Space([j2.servo_target,j3.servo_target],self.link1,self.link2)
+        boxMin = glm.vec2(-0.07,-0.17)
+        boxMaxFrom = glm.vec2(0.07,-0.12)
+        boxMaxTo = glm.vec2(0.07,-0.14)
+
+        maxAngle = glm.radians(30.0)
+        mixRatio = abs(angleJ1)/maxAngle
+        mixRatio = glm.clamp(mixRatio,0.0,1.0)
+        boxMax = glm.mix(boxMaxFrom,boxMaxTo,mixRatio)
+
+        # limit in box
+        correction = False
+        if legLocal[0]<boxMin[0]:
+            legLocal[0] = boxMin[0]
+            correction = True
+        if legLocal[0]>boxMax[0]:
+            legLocal[0] = boxMax[0]
+            correction = True
+        if legLocal[2]<boxMin[1]:
+            legLocal[2] = boxMin[1]
+            correction = True
+        if legLocal[2]>boxMax[1]:
+            legLocal[2] = boxMax[1]
+            correction = True
+        # recalc ik
+        if correction:
+            result = self.solveIK(glm.vec2(legLocal[0],legLocal[2]),self.len1,self.len2)
+            angleOffset = glm.vec3(0.0, glm.radians(-90.0), 0.0)
+            angle2 =  -1.0*self.angleDiff(angleOffset[1], result[0])
+            angle3 = -1.0*self.angleDiff(angleOffset[2], result[1])
+            j2.servo_target = angle2
+            j3.servo_target = angle3
+
+        
 
 class QuadruppedWalker(RoboschoolForwardWalkerMujocoXML):
     '''
@@ -1974,6 +2162,56 @@ class QuadruppedWalker(RoboschoolForwardWalkerMujocoXML):
     def __init__(self):
         RoboschoolForwardWalkerMujocoXML.__init__(self, "cat.urdf", "chassis")
 
+    def legs_height_reward(self,state):
+        if not self.inputsIsIKTargets:
+            # sync local position
+            fl = [self.jdict["fl1"].servo_target,self.jdict["fl2"].servo_target,self.jdict["fl3"].servo_target]
+            fr = [self.jdict["fr1"].servo_target,self.jdict["fr2"].servo_target,self.jdict["fr3"].servo_target]
+            bl = [self.jdict["bl1"].servo_target,self.jdict["bl2"].servo_target,self.jdict["bl3"].servo_target]
+            br = [self.jdict["br1"].servo_target,self.jdict["br2"].servo_target,self.jdict["br3"].servo_target]
+
+            self.syncLocalFromXYZ(fl,fr,bl,br,self.inputsSpace)
+        
+        legsBias = 1.0
+        
+        maxLocalValue = 0.15
+        maxLocalValueDecrease = 0.05
+        delta = maxLocalValue-maxLocalValueDecrease
+        if self.flPosLocal[0]<-maxLocalValueDecrease and self.frPosLocal[0]<-maxLocalValueDecrease and self.feet_contact[0]  and self.feet_contact[1]:
+            legsBias = max((self.flPosLocal[0]+maxLocalValueDecrease)/delta,(self.frPosLocal[0]+maxLocalValueDecrease)/delta)
+        if self.blPosLocal[0]>maxLocalValueDecrease and self.brPosLocal[0]>maxLocalValueDecrease and self.feet_contact[2]  and self.feet_contact[2]:
+            legsBias = -max((self.blPosLocal[0]-maxLocalValueDecrease)/delta,(self.brPosLocal[0]-maxLocalValueDecrease)/delta)
+
+        minHeight= -0.12
+        diffHeight = 0.03
+        if self.flPosLocal[2]>(minHeight-diffHeight) and self.feet_contact[0]:
+            ratio = -(self.flPosLocal[2]-minHeight)/diffHeight
+            legsBias+=ratio*2.0
+        if self.frPosLocal[2]>(minHeight-diffHeight) and self.feet_contact[1]:
+            ratio = -(self.frPosLocal[2]-minHeight)/diffHeight
+            legsBias+=ratio*2.0
+        if self.blPosLocal[2]>(minHeight-diffHeight) and self.feet_contact[2]:
+            ratio = -(self.blPosLocal[2]-minHeight)/diffHeight
+            legsBias+=ratio*2.0
+        if self.brPosLocal[2]>(minHeight-diffHeight) and self.feet_contact[3]:
+            ratio = -(self.brPosLocal[2]-minHeight)/diffHeight
+            legsBias+=ratio*2.0
+
+        '''
+        if self.flPosLocal[2]<-0.15 and self.feet_contact[0] and self.frame>100:
+            return -1.0
+        if self.frPosLocal[2]<-0.15 and self.feet_contact[1] and self.frame>100:
+            return -1.0
+        if self.blPosLocal[2]<-0.15 and self.feet_contact[2] and self.frame>100:
+            return -1.0
+        if self.brPosLocal[2]<-0.15 and self.feet_contact[3] and self.frame>100:
+            return -1.0
+        '''
+        if legsBias<=-1:
+            test = 0
+        return legsBias
+
+
     def alive_bonus(self,state):
         vecStep = [0,0,0]
         vecMovement = 0.0
@@ -1995,37 +2233,18 @@ class QuadruppedWalker(RoboschoolForwardWalkerMujocoXML):
         #if np.abs(self.body_xyz[1])>0.5:
         #    print("Far away from central line ",self.body_xyz[1] )
         #    return -1
-        maxRoll = 40.0
-        maxPitch = 40.0
+        maxRoll = 20.0
+        maxPitch = 20.0
         r, p, yaw = self.body_rpy
         # roll pitch angles check
         #if abs(r)>math.radians(maxRoll) or abs(p)>math.radians(maxPitch):
             #print(r,p,yaw)
         #    return -1
         # body height check
-        avgZ = self.parts["fl4_link"].pose().xyz()[2]+self.parts["fr4_link"].pose().xyz()[2]+self.parts["bl4_link"].pose().xyz()[2]+self.parts["br4_link"].pose().xyz()[2]
-        avgZ =avgZ/4.0
-        if self.body_xyz[2]<avgZ+0.05:
-            return -1
-        legsBias = 1.0
-        if not self.inputsIsIKTargets:
-            # sync local position
-            fl = [self.jdict["fl1"].servo_target,self.jdict["fl2"].servo_target,self.jdict["fl3"].servo_target]
-            fr = [self.jdict["fr1"].servo_target,self.jdict["fr2"].servo_target,self.jdict["fr3"].servo_target]
-            bl = [self.jdict["bl1"].servo_target,self.jdict["bl2"].servo_target,self.jdict["bl3"].servo_target]
-            br = [self.jdict["br1"].servo_target,self.jdict["br2"].servo_target,self.jdict["br3"].servo_target]
-
-            self.syncLocalFromXYZ(fl,fr,bl,br,self.inputsSpace)
-
-        if True or self.inputsIsIKTargets:
-
-            maxLocalValue = 0.08
-            maxLocalValueDecrease = 0.05
-            delta = maxLocalValue-maxLocalValueDecrease
-            if self.flPosLocal[0]<-maxLocalValueDecrease and self.frPosLocal[0]<-maxLocalValueDecrease:
-                legsBias = max((self.flPosLocal[0]+maxLocalValueDecrease)/delta,(self.frPosLocal[0]+maxLocalValueDecrease)/delta)
-            if self.blPosLocal[0]>maxLocalValueDecrease and self.brPosLocal[0]>maxLocalValueDecrease:
-                legsBias = -min((self.blPosLocal[0]-maxLocalValueDecrease)/delta,(self.brPosLocal[0]-maxLocalValueDecrease)/delta)
+        #avgZ = self.parts["fl4_link"].pose().xyz()[2]+self.parts["fr4_link"].pose().xyz()[2]+self.parts["bl4_link"].pose().xyz()[2]+self.parts["br4_link"].pose().xyz()[2]
+        #avgZ =avgZ/4.0
+        #if self.body_xyz[2]<avgZ+0.09:
+        #    return -1
 
         if self.check90Angles:
             flAngles = (self.jdict["fl2"].servo_target+self.jdict["fl3"].servo_target)
@@ -2040,14 +2259,16 @@ class QuadruppedWalker(RoboschoolForwardWalkerMujocoXML):
             brAngles = (self.jdict["br2"].servo_target+self.jdict["br3"].servo_target)
             if abs(brAngles)>glm.radians(90.0):
                 return -1
+
+
         rRatio = 0.5
         rRatioAngle = 0.5
         pRatio = 0.5
         rPitchAngle = 0.5
         angleReward = (1.0-abs(r)/math.radians(maxRoll*rRatioAngle))*rRatio+(1.0-abs(p)/math.radians(maxPitch*rPitchAngle))*pRatio
-        aliveRes = min(legsBias,np.clip(angleReward,-1.0,1.0))
-        if aliveRes<=-1.0:
-            dddd = 0
+        aliveRes = angleReward
+        #if aliveRes<=-1.0:
+        #    dddd = 0
         return aliveRes
 
     def __setstate__(self, state):
@@ -2068,7 +2289,15 @@ class QStadiumScene(Scene):
     stadium_halfwidth = 50*0.25     # FOOBALL_FIELD_HALFWID
 
     def episode_restart(self,advancedLevel,addObstacles):
+        if dumpMemory:
+            print("Episode restart1:",getCurrentMemoryUsage())
+
+        self.stadium = None
+        self.urdf = None
+
         Scene.episode_restart(self)   # contains cpp_world.clean_everything()
+        if dumpMemory:
+            print("Episode restart2:",getCurrentMemoryUsage())
         stadium_pose = cpp_household.Pose()
         if self.zero_at_running_strip_start_line:
             stadium_pose.set_xyz(0, 0, 0.0)
@@ -2078,10 +2307,24 @@ class QStadiumScene(Scene):
         #self.ground_plane_mjcf = self.cpp_world.load_mjcf(os.path.join(os.path.dirname(__file__), "models_env/ground_plane.xml"))
         #'''
 
+        if dumpMemory:
+            print("Episode restart3:",getCurrentMemoryUsage())
+
         if advancedLevel:
+            if dumpMemory:
+                print("Episode restart3a:",getCurrentMemoryUsage())
             self.stadium = self.cpp_world.load_urdf(
                 os.path.join(os.path.dirname(__file__), "models_env/terrain.urdf"),
                 stadium_pose,True,False)
+            '''
+            if hasattr(self,"stadiumTerrain")==False:
+                self.stadiumTerrain = self.cpp_world.load_urdf(
+                    os.path.join(os.path.dirname(__file__), "models_env/terrain.urdf"),
+                    stadium_pose,True,False)
+            '''
+            #self.stadium = self.stadiumTerrain
+            if dumpMemory:
+                print("Episode restart3b:",getCurrentMemoryUsage())
 
             if addObstacles:
                 self.obstacles = []
@@ -2091,15 +2334,27 @@ class QStadiumScene(Scene):
                     self.obstacles.append(self.cpp_world.load_urdf(
                         os.path.join(os.path.dirname(__file__), "models_env/sphere.urdf"),
                         sphere_pose,True,False))
+            if dumpMemory:
+                print("Episode restart3c:",getCurrentMemoryUsage())
         else:
-            filename = os.path.join(os.path.dirname(__file__),"models_env/plane.urdf")
+            if dumpMemory:
+                print("Episode restart3d:",getCurrentMemoryUsage())
             if self.zero_at_running_strip_start_line:
                 stadium_pose.set_xyz(0, 0, 0.0)
+
+            filename = os.path.join(os.path.dirname(__file__),"models_env/plane.urdf")
             self.stadium = self.cpp_world.load_urdf(
                 filename,
                 stadium_pose,
-            True,
+                True,
                 False)
+
+            if dumpMemory:
+                print("Episode restart3e:",getCurrentMemoryUsage())
+
+        if dumpMemory:
+            print("Episode restart4:",getCurrentMemoryUsage())
+
         '''
         self.boxes = []
         xOffset = 1.0

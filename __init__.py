@@ -29,19 +29,6 @@ register(
     tags={ "pg_complexity": 8*1000000 },
     )
 
-from roboschool.gym_pendulums import RoboschoolInvertedPendulum
-from roboschool.gym_pendulums import RoboschoolInvertedPendulumSwingup
-from roboschool.gym_pendulums import RoboschoolInvertedDoublePendulum
-from roboschool.gym_reacher import RoboschoolReacher
-from roboschool.gym_mujoco_walkers import RoboschoolHopper
-from roboschool.gym_mujoco_walkers import RoboschoolWalker2d
-from roboschool.gym_mujoco_walkers import RoboschoolHalfCheetah
-from roboschool.gym_mujoco_walkers import RoboschoolAnt
-from roboschool.gym_mujoco_walkers import RoboschoolHumanoid
-from roboschool.gym_humanoid_flagrun import RoboschoolHumanoidFlagrun
-from roboschool.gym_humanoid_flagrun import RoboschoolHumanoidFlagrunHarder
-from roboschool.gym_atlas import RoboschoolAtlasForwardWalk
-from roboschool.gym_pong import RoboschoolPong
 from quadruppedEnv.robot import QuadruppedWalker
 from quadruppedEnv.qant import QAnt
 from quadruppedEnv.qant import QAntOrg
