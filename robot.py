@@ -917,7 +917,7 @@ class RoboschoolForwardWalkerMujocoXML(RoboschoolForwardWalker, RoboschoolUrdfEn
 
         progressDirChassis = 0.0
         progressDirChassis = glm.dot(self.desiredChassisDir,chassisDir)
-        progressDirChassis = progressDirChassis
+        progressDirChassis = -(1.0-progressDirChassis)
         progressDirChassis*=self.progressDirChassisMultiplier
 
         targetDir = self.vecToTarget
@@ -926,7 +926,7 @@ class RoboschoolForwardWalkerMujocoXML(RoboschoolForwardWalker, RoboschoolUrdfEn
 
         progressDirTarget = 0.0
         progressDirTarget = glm.dot(targetDir,chassisDir)
-        progressDirTarget = progressDirTarget
+        progressDirTarget = -(1.0-progressDirTarget)
         progressDirTarget*=self.progressDirTargetMultiplier
 
         energyCost = 0.0

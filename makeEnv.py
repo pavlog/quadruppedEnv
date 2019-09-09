@@ -23,7 +23,7 @@ def make_env_with_best_settings(envName, advancedLevel = True):
   env.env.actionsSpace = 0
   env.env.simRewardOnly = False
 
-  env.env.maxAnglesPerSec = 120.0
+  env.env.maxAnglesPerSec = 90.0
 
 
   env.env.targetDesired_episode_from = 0
@@ -41,18 +41,18 @@ def make_env_with_best_settings(envName, advancedLevel = True):
 
   env.env.check90Angles = False
 
-  env.env.goalRandomTargetDirClamp = glm.radians(30.0)
-  env.env.goalRandomChassisDirClamp = glm.radians(30.0)
+  env.env.goalRandomTargetDirClamp = glm.radians(40.0)
+  env.env.goalRandomChassisDirClamp = glm.radians(40.0)
 
-  env.env.progressDirChassisMultiplier = 0.0
-  env.env.progressDirTargetMultiplier = 0.2
+  env.env.progressDirChassisMultiplier = 0.5
+  env.env.progressDirTargetMultiplier = 0.5
 
   env.env.aliveMultiplier = 1.0
   env.env.aliveMultiplierClampMax = 0.0
 
   env.env.yawRewardMultiplier = 0.0
 
-  env.env.holdingTorqueMultiplier=2.0
+  env.env.holdingTorqueMultiplier=0.0
 
   env.env.energyCostMultiplier = 0.0
 
