@@ -41,11 +41,11 @@ def make_env_with_best_settings(envName, advancedLevel = True):
 
   env.env.check90Angles = False
 
-  env.env.goalRandomTargetDirClamp = glm.radians(40.0)
-  env.env.goalRandomChassisDirClamp = glm.radians(40.0)
+  env.env.goalRandomTargetDirClamp = glm.radians(50.0)
+  env.env.goalRandomChassisDirClamp = glm.radians(50.0)
 
-  env.env.progressDirChassisMultiplier = 0.5
-  env.env.progressDirTargetMultiplier = 0.5
+  env.env.progressDirChassisMultiplier = 0.6
+  env.env.progressDirTargetMultiplier = 0.6
 
   env.env.aliveMultiplier = 1.0
   env.env.aliveMultiplierClampMax = 0.0
