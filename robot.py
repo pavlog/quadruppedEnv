@@ -2233,8 +2233,8 @@ class QuadruppedWalker(RoboschoolForwardWalkerMujocoXML):
         #if np.abs(self.body_xyz[1])>0.5:
         #    print("Far away from central line ",self.body_xyz[1] )
         #    return -1
-        maxRoll = 20.0
-        maxPitch = 20.0
+        maxRoll = 30.0
+        maxPitch = 30.0
         r, p, yaw = self.body_rpy
         # roll pitch angles check
         #if abs(r)>math.radians(maxRoll) or abs(p)>math.radians(maxPitch):
