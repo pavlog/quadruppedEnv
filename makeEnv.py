@@ -521,8 +521,14 @@ def make_env_with_best_settings_for_test(envName):
   envOrg.ground_pos_random_x = 0.0
   envOrg.ground_pos_random_y = 0.0
   envOrg.spawnYawMultiplier = 0.0
-  env.env.spawn_rot_x = 0.0
-  env.env.spawn_rot_y = 0.0
+  envOrg.spawn_rot_x = 0.0
+  envOrg.spawn_rot_y = 0.0
+
+  #envOrg.targetPosReward = False #True
+  
+  #envOrg.progressMultiplier =  100.0
+
+  envOrg.targetPosRewardEarlyTerminateByDistTime = 3.0
 
   '''
   envOrg.progressMultiplier =  1.0
